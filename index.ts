@@ -17,37 +17,71 @@ import {
   publicClient,
   renderMessage,
 } from "./utils";
+import { connectDb } from "./config/db";
+import { Config } from "./models/Config";
 console.log("initing");
+connectDb();
 initializeServer();
+
+let chatIds: number[];
+
+const refreshChatId = async () => {
+  try {
+    const config = await Config.findOne({});
+    console.log("configs =>", config);
+
+    if (config) {
+      chatIds = config.chatIds;
+    }
+  } catch (error) {
+    console.log("error =>", error);
+  }
+};
+
+refreshChatId();
 
 const bot = new TelegramBot(BOT_TOKEN, {
   polling: true,
 });
 
-let chatId = 5342316799;
-
-// bot.sendMessage(-4154609412, "hello me");
-
-bot.on("message", (msg: TelegramBot.Message) => {
+bot.on("message", async (msg: TelegramBot.Message) => {
   console.log("setting chat id...", msg.chat.id);
-  chatId = msg.chat.id;
 
-  bot.sendMessage(chatId, "🤖 Bot set On this Group/Chat");
+  const config = await Config.findOne({});
+
+  if (!config) {
+    await Config.create({ chatIds: [msg.chat.id] });
+  } else {
+    const idExist = config.chatIds.includes(msg.chat.id);
+    if (!idExist) {
+      config.chatIds.push(msg.chat.id);
+      await config.save();
+    }
+  }
+  await refreshChatId();
+  if (msg.text === "/active") {
+    bot.sendMessage(msg.chat.id, "🤖 Bot is now Active");
+  }
 });
 
 function sendMessageHandler(msg: string) {
-  if (chatId) {
-    console.log("chatId =>", chatId);
+  if (chatIds.length > 0) {
     console.log("msg =>", msg);
 
-    bot
-      .sendMessage(chatId, msg)
-      .then((msg: TelegramBot.Message) => {
-        console.log("msg => Done");
-      })
-      .catch((err) => {
-        console.log("err =>", err);
-      });
+    chatIds.forEach((chatId) => {
+      console.log("chatId =>", chatId);
+
+      bot
+        .sendMessage(chatId, msg, {
+          parse_mode: "HTML",
+        })
+        .then((msg: TelegramBot.Message) => {
+          console.log("msg => Done");
+        })
+        .catch((err) => {
+          console.log("err =>", err.message);
+        });
+    });
   }
 }
 

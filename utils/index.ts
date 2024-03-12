@@ -96,11 +96,25 @@ Your response must only contain array of string and give only null string value 
 //   return res.content;
 // }
 
+const cleanLink = (link: string) => {
+  const spaceIndex = link.indexOf(" ");
+
+  if (spaceIndex !== -1) {
+    link = link.slice(0, spaceIndex);
+  }
+
+  const bracketIndex = link.indexOf("[");
+
+  if (bracketIndex !== -1) {
+    link = link.slice(0, bracketIndex);
+  }
+
+  return link;
+};
+
 export function extractLinks(contractCode: string) {
   console.log("contractCode =>", contractCode);
-  const matches = contractCode.matchAll(
-    /(?<links>https?:\/\/.+)\n?\s?\[?\\?/gm
-  );
+  const matches = contractCode.matchAll(/(?<links>https?:\/\/.+)\n?\s?/gm);
   console.log("matches =>", matches);
 
   const links: string[] = [];
@@ -108,7 +122,7 @@ export function extractLinks(contractCode: string) {
     console.log("item =>", item.groups);
 
     if (item.groups) {
-      links.push(item.groups.links);
+      links.push(cleanLink(item.groups.links));
     }
   }
 
@@ -175,19 +189,19 @@ export const renderMessage = (data: {
   let _links = "";
 
   if (data.links) {
-    _links = "Links: \n";
+    _links = "Links: \n\n";
     for (let [key, value] of Object.entries(data.links)) {
       if (key === "PDF") {
-        _links += `PDF: `;
+        _links += `PDF: \n`;
 
         (value as string[]).forEach((item) => {
-          _links += `${item},\n `;
+          _links += `${item},\n`;
         });
       } else if (key === "Unknown") {
         _links += `OtherLinks: \n`;
 
         (value as string[]).forEach((item) => {
-          _links += `${item},\n `;
+          _links += `${item},\n`;
         });
       } else {
         _links += `${key}: ${value}\n`;
@@ -195,11 +209,12 @@ export const renderMessage = (data: {
     }
   }
 
-  const m = `🔥Exchange Created
-🪙 Token: ${data.name}
-🗒 Address: ${data.token}
-🔗 Chain: ${data.chain}
-💰 liquidity: ${data.liquidity}
+  const m = `🔥 <b>Exchange Created</b>
+
+🪙  Token: <b>${data.name}</b>
+🗒   Address: <b>${data.token}</b>
+🔗  Chain: <b>${data.chain}</b>
+💰  Liquidity: <b>${data.liquidity} ETH</b>
 
 ${_links}
 `;
@@ -208,21 +223,11 @@ ${_links}
 };
 
 export const getCategorizeLinks = (links: string[]): CategorizedLinks => {
-  const categorizedLinks: CategorizedLinks = {
-    X: "-",
-    Telegram: "-",
-    Facebook: "-",
-    Instagram: "-",
-    Discord: "-",
-    Coingecko: "-",
-    Github: "-",
-    PDF: [],
-    Unknown: [],
-  };
+  const categorizedLinks: CategorizedLinks = {};
 
   links.forEach((link) => {
     if (link.includes("twitter.com") || link.includes("x.com")) {
-      categorizedLinks["X"] = link;
+      categorizedLinks["X"] = `${link}`;
     } else if (
       link.includes("t.me") ||
       link.toLowerCase().includes("telegram")
@@ -254,8 +259,14 @@ export const getCategorizeLinks = (links: string[]): CategorizedLinks => {
     ) {
       categorizedLinks["Github"] = link;
     } else if (link.toLowerCase().endsWith(".pdf")) {
+      if (!categorizedLinks["PDF"]) {
+        categorizedLinks["PDF"] = [];
+      }
       categorizedLinks["PDF"].push(link);
     } else {
+      if (!categorizedLinks["Unknown"]) {
+        categorizedLinks["Unknown"] = [];
+      }
       categorizedLinks["Unknown"].push(link);
     }
   });
