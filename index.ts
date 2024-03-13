@@ -110,11 +110,14 @@ function logHandler(logs) {
 
       let name = "-";
 
-      if (contractCodeRes) {
-        const { sourceCode: contractCode, name: tokenName } = contractCodeRes;
-        name = tokenName;
-        rawLinks = extractLinks(contractCode);
+      if (!contractCodeRes) {
+        console.log("contractCodeRes not found");
+        return;
       }
+
+      const { sourceCode: contractCode, name: tokenName } = contractCodeRes;
+      name = tokenName;
+      rawLinks = extractLinks(contractCode);
 
       if (rawLinks.length > 0) {
         categorizedLinks = getCategorizeLinks(rawLinks);
