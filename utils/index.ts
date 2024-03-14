@@ -1,4 +1,4 @@
-import { CategorizedLinks, OPENAI_API_KEY } from "../config";
+import { CategorizedLinks, OPENAI_API_KEY, ignoredLinks } from "../config";
 import { CHAINS, defaultChain } from "../constants/chains";
 import { ChatOpenAI } from "@langchain/openai";
 import { PromptTemplate } from "@langchain/core/prompts";
@@ -197,7 +197,7 @@ export const renderMessage = (data: {
         (value as string[]).forEach((item) => {
           _links += `${item},\n`;
         });
-      } else if (key === "Unknown") {
+      } else if (key === "Unknown" && (value as string[]).length > 0) {
         _links += `OtherLinks: \n`;
 
         (value as string[]).forEach((item) => {
@@ -212,7 +212,7 @@ export const renderMessage = (data: {
   const m = `🔥 <b>Exchange Created</b>
 
 🪙  Token: <b>${data.name}</b>
-🗒   Address: <b>${data.token}</b>
+🗒   Address: <b><a href="${CHAINS[CHAIN_ID].blockExplorerUrls[0]}/address/${data.token}">${data.token}</a></b>
 🔗  Chain: <b>${data.chain}</b>
 💰  Liquidity: <b>${data.liquidity} ETH</b>
 
@@ -267,7 +267,12 @@ export const getCategorizeLinks = (links: string[]): CategorizedLinks => {
       if (!categorizedLinks["Unknown"]) {
         categorizedLinks["Unknown"] = [];
       }
-      categorizedLinks["Unknown"].push(link);
+
+      if (ignoredLinks.every((_link) => link.search(_link) === -1)) {
+        categorizedLinks["Unknown"].push(link);
+      } else {
+        console.log("ignored link", link);
+      }
     }
   });
 

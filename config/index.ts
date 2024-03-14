@@ -6,6 +6,12 @@ export const ETHERSCAN_API_KEY = `${process.env.ETHERSCAN_API_KEY}` || "";
 export const PORT = 3000;
 export const MONGO_URI = `${process.env.MONGO_URI}` || "";
 
+export const ignoredLinks = [
+  "eips.ethereum.org",
+  "consensys",
+  "solidity.readthedocs",
+];
+
 export type CategorizedLinks = {
   X?: string;
   Telegram?: string;
