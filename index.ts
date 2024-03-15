@@ -19,7 +19,8 @@ import {
 } from "./utils";
 import { connectDb } from "./config/db";
 import { Config } from "./models/Config";
-console.log("initing");
+
+console.log("initializing...");
 connectDb();
 initializeServer();
 

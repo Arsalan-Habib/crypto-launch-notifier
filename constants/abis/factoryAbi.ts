@@ -1,8 +1,6 @@
 const abi = [
   {
-    inputs: [
-      { internalType: "address", name: "_feeToSetter", type: "address" },
-    ],
+    inputs: [{ internalType: "address", name: "_feeToSetter", type: "address" }],
     payable: false,
     stateMutability: "nonpayable",
     type: "constructor",
@@ -104,9 +102,7 @@ const abi = [
   },
   {
     constant: false,
-    inputs: [
-      { internalType: "address", name: "_feeToSetter", type: "address" },
-    ],
+    inputs: [{ internalType: "address", name: "_feeToSetter", type: "address" }],
     name: "setFeeToSetter",
     outputs: [],
     payable: false,

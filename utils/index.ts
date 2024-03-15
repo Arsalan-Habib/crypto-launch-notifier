@@ -129,9 +129,7 @@ export function extractLinks(contractCode: string) {
   return links;
 }
 
-export const getContractSrcCode = async (
-  address: Address
-): Promise<{ sourceCode: string; name: string } | null> => {
+export const getContractSrcCode = async (address: Address): Promise<{ sourceCode: string; name: string } | null> => {
   console.log("extracting source code from contract...");
   const code = await getSourceCode(address);
 
@@ -153,9 +151,7 @@ export const getContractSrcCode = async (
   return null;
 };
 
-export const getTokenAddress = async (
-  address: Address
-): Promise<Address | null> => {
+export const getTokenAddress = async (address: Address): Promise<Address | null> => {
   const token0 = await publicClient.readContract({
     abi: uniswapPairAbi,
     address,
@@ -228,35 +224,17 @@ export const getCategorizeLinks = (links: string[]): CategorizedLinks => {
   links.forEach((link) => {
     if (link.includes("twitter.com") || link.includes("x.com")) {
       categorizedLinks["X"] = `${link}`;
-    } else if (
-      link.includes("t.me") ||
-      link.toLowerCase().includes("telegram")
-    ) {
+    } else if (link.includes("t.me") || link.toLowerCase().includes("telegram")) {
       categorizedLinks["Telegram"] = link;
-    } else if (
-      link.includes("facebook.com") ||
-      link.toLowerCase().includes("facebook")
-    ) {
+    } else if (link.includes("facebook.com") || link.toLowerCase().includes("facebook")) {
       categorizedLinks["Facebook"] = link;
-    } else if (
-      link.includes("instagram.com") ||
-      link.toLowerCase().includes("instagram")
-    ) {
+    } else if (link.includes("instagram.com") || link.toLowerCase().includes("instagram")) {
       categorizedLinks["Instagram"] = link;
-    } else if (
-      link.includes("discord.com") ||
-      link.toLowerCase().includes("discord")
-    ) {
+    } else if (link.includes("discord.com") || link.toLowerCase().includes("discord")) {
       categorizedLinks["Discord"] = link;
-    } else if (
-      link.includes("coingecko.com") ||
-      link.toLowerCase().includes("coingecko")
-    ) {
+    } else if (link.includes("coingecko.com") || link.toLowerCase().includes("coingecko")) {
       categorizedLinks["Coingecko"] = link;
-    } else if (
-      link.includes("github.com") ||
-      link.toLowerCase().includes("github")
-    ) {
+    } else if (link.includes("github.com") || link.toLowerCase().includes("github")) {
       categorizedLinks["Github"] = link;
     } else if (link.toLowerCase().endsWith(".pdf")) {
       if (!categorizedLinks["PDF"]) {
