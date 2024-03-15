@@ -7,7 +7,7 @@ export const initializeServer = () => {
   const app = express();
 
   app.get("/", (req, res) => {
-    res.send("Liquipay bot is running!");
+    res.send("Token launch notifier bot is running!");
   });
 
   app.get("/extract-links/:address", async (req, res) => {
@@ -16,17 +16,11 @@ export const initializeServer = () => {
 
       const contractCode = await getContractSrcCode(address);
 
-      //   console.log("contractCode =>", contractCode);
-
       if (!contractCode) {
         return res.json({
           error: "Contract not found",
         });
       }
-      //   console.log(
-      //     "contractCode.result[0].SourceCode =>",
-      //     contractCode.result[0].SourceCode
-      //   );
 
       const links = extractLinks(contractCode.sourceCode);
 
@@ -58,17 +52,11 @@ export const initializeServer = () => {
 
       const contractCode = await getContractSrcCode(address);
 
-      //   console.log("contractCode =>", contractCode);
-
       if (!contractCode) {
         return res.json({
           error: "Contract not found",
         });
       }
-      //   console.log(
-      //     "contractCode.result[0].SourceCode =>",
-      //     contractCode.result[0].SourceCode
-      //   );
 
       res.json({
         contractCode,
@@ -80,8 +68,6 @@ export const initializeServer = () => {
       });
     }
   });
-
-  //   listen to port 3000 by default
 
   app.listen(PORT, () => {
     console.log("Server is listening on port " + PORT);
