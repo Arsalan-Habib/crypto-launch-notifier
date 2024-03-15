@@ -6,9 +6,10 @@
   "license": "MIT",
   "scripts": {
     "build": "tsc",
-    "start": "tsc && node ./dist/index.js",
+    "start": "node ./dist/index.js",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "concurrently \"tsc -w\" \"nodemon -q ./dist/index.js\""
+    "dev": "concurrently \"tsc -w\" \"nodemon -q ./dist/index.js\"",
+    "format": "prettier --write \"./**/*.{js,jsx,ts,tsx}\""
   },
   "dependencies": {
     "axios": "^1.6.7",
@@ -24,6 +25,7 @@
     "@types/node-telegram-bot-api": "^0.64.3",
     "concurrently": "^8.2.2",
     "nodemon": "^3.1.0",
+    "prettier": "^3.2.5",
     "ts-node": "^10.9.2",
     "typescript": "^5.3.3"
   }
