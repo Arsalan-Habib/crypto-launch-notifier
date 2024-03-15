@@ -1,13 +1,5 @@
 import { Address } from "viem";
-import {
-  Chain,
-  bsc,
-  goerli,
-  mainnet,
-  polygon,
-  polygonMumbai,
-  sepolia,
-} from "viem/chains";
+import { Chain, bsc, goerli, mainnet, polygon, polygonMumbai, sepolia } from "viem/chains";
 
 export type ICHAINS = {
   [chainId: number]: {
@@ -50,8 +42,7 @@ export const CHAINS: ICHAINS = {
     name: "Ethereum",
     chainId: 1,
     shortName: "ETH",
-    rpcUrl:
-      "https://eth-mainnet.g.alchemy.com/v2/qxq5obMQ42JA1gka2p69MQ-4Ds4XvLgL",
+    rpcUrl: "https://eth-mainnet.g.alchemy.com/v2/qxq5obMQ42JA1gka2p69MQ-4Ds4XvLgL",
     blockExplorerUrls: ["https://etherscan.io/"],
     api: "https://api.etherscan.io/api",
     nativeCurrency: {
@@ -85,8 +76,7 @@ export const CHAINS: ICHAINS = {
     shortName: "MATIC",
     chainId: 80001,
     // rpcUrl: "https://polygon-mumbai.g.alchemy.com/v2/demo",
-    rpcUrl:
-      "https://polygon-mumbai.infura.io/v3/c9296719995042d6adafefe11c6798a2",
+    rpcUrl: "https://polygon-mumbai.infura.io/v3/c9296719995042d6adafefe11c6798a2",
     blockExplorerUrls: ["https://mumbai.polygonscan.com/"],
     api: "https://api-testnet.polygonscan.com/api",
     nativeCurrency: {

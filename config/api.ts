@@ -6,7 +6,7 @@ import { ETHERSCAN_API_KEY } from ".";
 export const getSourceCode = async (address: Address) => {
   try {
     const response = await axios.get(
-      `${defaultChain.api}?module=contract&action=getsourcecode&address=${address}&apikey=${ETHERSCAN_API_KEY}`
+      `${defaultChain.api}?module=contract&action=getsourcecode&address=${address}&apikey=${ETHERSCAN_API_KEY}`,
     );
 
     return response.data;
