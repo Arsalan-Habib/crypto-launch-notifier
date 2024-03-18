@@ -71,30 +71,34 @@ const model = new ChatOpenAI({
 });
 
 const template = `
-You are a helpful AI assistant with expertise in extracting Urls from the comments of smart contracts code.
-You will be given a smart contract solidity code to extract the Urls from and you have to search every comment in the code for the Urls.
+You are a helpful AI assistant with expertise in detecting whether the given Url belongs to the given contract name.
 
-<contractCode>
-  {contractCode}
-</contractCode>
+<contractName>
+  {contractName}
+</contractName>
 
-Your response must only contain array of string and give only null string value (in case of no link). 
+<link>
+  {link}
+</link>
+
+Your response must only be either a true or false and nothing else. 
 `;
 
-// export async function extractLinks(contractCode: string) {
+export async function verifyLinkUsingAI(contractName:string, link: string) {
 
-//   const promptTemplate = PromptTemplate.fromTemplate(template);
+  const promptTemplate = PromptTemplate.fromTemplate(template);
 
-//   const chain = promptTemplate.pipe(model);
+  const chain = promptTemplate.pipe(model);
 
-//   const res = await chain.invoke({
-//     contractCode: JSON.stringify(contractCode),
-//   });
+  const res = await chain.invoke({
+    contractName: JSON.stringify(contractName),
+    link: JSON.stringify(link),
+  });
 
-//   console.log("Respsonse From OPENAI:", res.content);
+  console.log("Respsonse From OPENAI:", res.content);
 
-//   return res.content;
-// }
+  return res.content;
+}
 
 const cleanLink = (link: string) => {
   const spaceIndex = link.indexOf(" ");
@@ -195,14 +199,14 @@ export const renderMessage = (data: {
     }
 
     if (data.links["PDF"] && data.links["PDF"].length > 0) {
-      _links += "PDF: \n\n";
+      _links += "PDF: \n";
       data.links["PDF"].forEach((link) => {
         _links += `${link}\n`;
       });
     }
 
     if (data.links["Unknown"] && data.links["Unknown"].length > 0) {
-      _links += "Others: \n\n";
+      _links += "Others: \n";
       data.links["Unknown"].forEach((link) => {
         _links += `${link}\n`;
       });
@@ -223,43 +227,56 @@ ${_links}
   return m;
 };
 
-export const getCategorizeLinks = (links: string[]): CategorizedLinks => {
+export const getCategorizeLinks = async (links: string[],contractName:string): Promise<CategorizedLinks> => {
 
-  
+
   const categorizedLinks: CategorizedLinks = {};
 
-  links.forEach((link) => {
-    if (link.includes("twitter.com") || link.includes("x.com")) {
-      categorizedLinks["X"] = `${link}`;
-    } else if (link.includes("t.me") || link.toLowerCase().includes("telegram")) {
-      categorizedLinks["Telegram"] = link;
-    } else if (link.includes("facebook.com") || link.toLowerCase().includes("facebook")) {
-      categorizedLinks["Facebook"] = link;
-    } else if (link.includes("instagram.com") || link.toLowerCase().includes("instagram")) {
-      categorizedLinks["Instagram"] = link;
-    } else if (link.includes("discord.com") || link.toLowerCase().includes("discord")) {
-      categorizedLinks["Discord"] = link;
-    } else if (link.includes("coingecko.com") || link.toLowerCase().includes("coingecko")) {
-      categorizedLinks["Coingecko"] = link;
-    } else if (link.includes("github.com") || link.toLowerCase().includes("github")) {
-      categorizedLinks["Github"] = link;
-    } else if (link.toLowerCase().endsWith(".pdf")) {
-      if (!categorizedLinks["PDF"]) {
-        categorizedLinks["PDF"] = [];
-      }
-      categorizedLinks["PDF"].push(link);
-    } else {
-      if (!categorizedLinks["Unknown"]) {
-        categorizedLinks["Unknown"] = [];
-      }
+  const linkPromise = links.map(async (link) => {
+    if (!ignoredLinks.some((_link) => link.search(_link) !== -1)) {
 
-      if (ignoredLinks.every((_link) => link.search(_link) === -1)) {
-        categorizedLinks["Unknown"].push(link);
-      } else {
-        console.log("ignored link", link);
+      if (link.toLowerCase().endsWith(".pdf")) {
+        if (!categorizedLinks["PDF"]) {
+          categorizedLinks["PDF"] = [];
+        }
+        categorizedLinks["PDF"].push(link);
       }
+      else if (link.includes("twitter.com") || link.includes("x.com")) {
+        categorizedLinks["X"] = `${link}`;
+      } else if (link.includes("t.me") || link.toLowerCase().includes("telegram")) {
+        categorizedLinks["Telegram"] = link;
+      } else if (link.includes("facebook.com") || link.toLowerCase().includes("facebook")) {
+        categorizedLinks["Facebook"] = link;
+      } else if (link.includes("instagram.com") || link.toLowerCase().includes("instagram")) {
+        categorizedLinks["Instagram"] = link;
+      } else if (link.includes("discord.com") || link.toLowerCase().includes("discord")) {
+        categorizedLinks["Discord"] = link;
+      } else if (link.includes("coingecko.com") || link.toLowerCase().includes("coingecko")) {
+        categorizedLinks["Coingecko"] = link;
+      } else if (link.includes("github.com") || link.toLowerCase().includes("github")) {
+        categorizedLinks["Github"] = link;
+      } else {
+        if (!categorizedLinks["Unknown"]) {
+          categorizedLinks["Unknown"] = [];
+        } 
+          const isWebLink = await verifyLinkUsingAI(contractName,link);
+
+          if(isWebLink === "True"){
+
+            categorizedLinks["Web"] = link;
+          }else{
+
+            categorizedLinks["Unknown"].push(link);
+          }
+        }
+    } else {
+      console.log("ignored link", link);
     }
+    return ""
   });
+
+
+  await Promise.all(linkPromise);
 
   return categorizedLinks;
 };

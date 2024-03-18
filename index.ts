@@ -121,7 +121,7 @@ function logHandler(logs) {
       rawLinks = extractLinks(contractCode);
 
       if (rawLinks.length > 0) {
-        categorizedLinks = getCategorizeLinks(rawLinks);
+        categorizedLinks =await getCategorizeLinks(rawLinks, name);
       }
 
       if (categorizedLinks) {

@@ -6,9 +6,10 @@ export const ETHERSCAN_API_KEY = `${process.env.ETHERSCAN_API_KEY}` || "";
 export const PORT = process.env.PORT || 3000;
 export const MONGO_URI = `${process.env.MONGO_URI}` || "";
 
-export const ignoredLinks = ["eips.ethereum.org", "consensys", "solidity.readthedocs","https://github.com/ethereum/EIPs/issues", "https://forum.openzeppelin.com","https://github.com/OpenZeppelin/openzeppelin-contracts","https://forum.zeppelin.solutions"];
+export const ignoredLinks = ["eips.ethereum.org", "consensys", "solidity.readthedocs","https://www.github.com/ethereum/EIPs","https://github.com/ethereum/EIPs/issues", "https://forum.openzeppelin.com","https://github.com/OpenZeppelin/openzeppelin-contracts","https://forum.zeppelin.solutions", "https://docs.soliditylang.org/","https://eth.wiki/json-rpc"];
 
 export type CategorizedLinks = {
+  Web?: string;
   X?: string;
   Telegram?: string;
   Facebook?: string;
