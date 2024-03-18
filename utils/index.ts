@@ -184,24 +184,28 @@ export const renderMessage = (data: {
 }) => {
   let _links = "";
 
+
+
   if (data.links) {
     _links = "Links: \n\n";
     for (let [key, value] of Object.entries(data.links)) {
-      if (key === "PDF") {
-        _links += `PDF: \n`;
-
-        (value as string[]).forEach((item) => {
-          _links += `${item},\n`;
-        });
-      } else if (key === "Unknown" && (value as string[]).length > 0) {
-        _links += `OtherLinks: \n`;
-
-        (value as string[]).forEach((item) => {
-          _links += `${item},\n`;
-        });
-      } else {
+      if (key !== "PDF" && key !== "Unknown") {
         _links += `${key}: ${value}\n`;
-      }
+      } 
+    }
+
+    if (data.links["PDF"] && data.links["PDF"].length > 0) {
+      _links += "PDF: \n\n";
+      data.links["PDF"].forEach((link) => {
+        _links += `${link}\n`;
+      });
+    }
+
+    if (data.links["Unknown"] && data.links["Unknown"].length > 0) {
+      _links += "Others: \n\n";
+      data.links["Unknown"].forEach((link) => {
+        _links += `${link}\n`;
+      });
     }
   }
 
@@ -215,10 +219,13 @@ export const renderMessage = (data: {
 ${_links}
 `;
 
+
   return m;
 };
 
 export const getCategorizeLinks = (links: string[]): CategorizedLinks => {
+
+  
   const categorizedLinks: CategorizedLinks = {};
 
   links.forEach((link) => {
