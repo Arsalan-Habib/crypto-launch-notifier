@@ -1,10 +1,11 @@
-import { CategorizedLinks, OPENAI_API_KEY, ignoredLinks } from "../config";
+import { CategorizedLinks, OPENAI_API_KEY } from "../config";
 import { CHAINS, defaultChain } from "../constants/chains";
 import { ChatOpenAI } from "@langchain/openai";
 import { PromptTemplate } from "@langchain/core/prompts";
 import { getSourceCode } from "../config/api";
 import { Address, createPublicClient, erc20Abi, http } from "viem";
 import uniswapPairAbi from "../constants/abis/uniswapPairAbi";
+import { LINKS_ORDER, LINKS_TO_IGNORE } from "../constants/links";
 
 export const CHAIN_ID = 1;
 
@@ -17,81 +18,33 @@ export const getURL = async (chainId: number = defaultChain.chainId) => {
   return CHAINS[chainId].api;
 };
 
-// export const getAbi = async (contractAddress: string) => {
-//   const url = await getURL();
-//   const response = await axios.get(url, {
-//     params: {
-//       module: "contract",
-//       action: "getabi",
-//       address: contractAddress,
-//       apiKey: ETHERSCAN_API_KEY,
-//     },
-//   });
-
-//   return response.data.result;
-// };
-
-// export const isERC20Token = async (
-//   tokenAddress: string,
-//   publicClient?: PublicClient
-// ) => {
-//   // const provider = new ethers.providers.JsonRpcProvider(defaultChain.rpcUrl);
-//   try {
-//     let _publicClient = publicClient;
-//     if (!publicClient) {
-//       _publicClient =
-//     }
-
-//     _publicClient;
-//     // let abi = await getAbi(tokenAddress);
-//     // const contract = new ethers.Contract(tokenAddress, abi, provider);
-
-//     // Check if the contract implements essential ERC-20 functions
-//     const requiredFunctions = [
-//       "name",
-//       "symbol",
-//       "decimals",
-//       "balanceOf",
-//       "transfer",
-//       "approve",
-//     ];
-//     // const hasRequiredFunctions = requiredFunctions.every(
-//     //   (funcName) => contract.functions[funcName]
-//     // );
-
-//     // return hasRequiredFunctions;
-//   } catch (error) {
-//     throw new Error(`${tokenAddress} is not an ERC-20 token`);
-//   }
-// };
-
 const model = new ChatOpenAI({
   modelName: "gpt-4",
   openAIApiKey: OPENAI_API_KEY,
 });
 
 const template = `
-You are a helpful AI assistant with expertise in detecting whether the given Url belongs to the given contract name.
+You are a helpful AI assistant with expertise in finding the correct link for a given cryptocurrency project. You are given the token symbol of the project and some links. You need to return the link that is most likely to be the official website of the project. If no link is the official website, you should return false. Do not return any link that is not from the provided links.
 
-<contractName>
-  {contractName}
-</contractName>
+<tokenSymbol>
+  {tokenSymbol}
+</tokenSymbol>
 
-<link>
-  {link}
-</link>
+<links>
+  {links}
+</links>
 
-Your response must only be either a true or false and nothing else. 
+Your response must either be a single link or a false in the case that no links match the project. Do not add any additional information to your response. You should only return the link or false.
 `;
 
-export async function verifyLinkUsingAI(contractName: string, link: string) {
+export async function getOfficialWebsiteFromLinks(contractName: string, links: string[]) {
   const promptTemplate = PromptTemplate.fromTemplate(template);
 
   const chain = promptTemplate.pipe(model);
 
   const res = await chain.invoke({
-    contractName: JSON.stringify(contractName),
-    link: JSON.stringify(link),
+    tokenSymbol: JSON.stringify(contractName),
+    links: JSON.stringify(links),
   });
 
   console.log("Respsonse From OPENAI:", res.content);
@@ -223,51 +176,80 @@ ${_links}
   return m;
 };
 
+export const includesAny = (str: string, testers: string[]) => {
+  let found = false;
+
+  for (let regex of testers) {
+    if (str.includes(regex)) {
+      found = true;
+      break;
+    }
+  }
+
+  return found;
+};
+
 export const getCategorizeLinks = async (links: string[], contractName: string): Promise<CategorizedLinks> => {
   const categorizedLinks: CategorizedLinks = {};
 
-  const linkPromise = links.map(async (link) => {
-    if (!ignoredLinks.some((_link) => link.search(_link) !== -1)) {
-      if (link.toLowerCase().endsWith(".pdf")) {
-        if (!categorizedLinks["PDF"]) {
-          categorizedLinks["PDF"] = [];
-        }
-        categorizedLinks["PDF"].push(link);
-      } else if (link.includes("twitter.com") || link.includes("x.com")) {
-        categorizedLinks["X"] = `${link}`;
-      } else if (link.includes("t.me") || link.toLowerCase().includes("telegram")) {
-        categorizedLinks["Telegram"] = link;
-      } else if (link.includes("facebook.com") || link.toLowerCase().includes("facebook")) {
-        categorizedLinks["Facebook"] = link;
-      } else if (link.includes("instagram.com") || link.toLowerCase().includes("instagram")) {
-        categorizedLinks["Instagram"] = link;
-      } else if (link.includes("discord.com") || link.toLowerCase().includes("discord")) {
-        categorizedLinks["Discord"] = link;
-      } else if (link.includes("coingecko.com") || link.toLowerCase().includes("coingecko")) {
-        categorizedLinks["Coingecko"] = link;
-      } else if (link.includes("github.com") || link.toLowerCase().includes("github")) {
-        categorizedLinks["Github"] = link;
-      } else {
-        if (!categorizedLinks["Unknown"]) {
-          categorizedLinks["Unknown"] = [];
-        }
-        const isWebLink = await verifyLinkUsingAI(contractName, link);
-
-        if (isWebLink === "True") {
-          categorizedLinks["Web"] = link;
-        } else {
-          categorizedLinks["Unknown"].push(link);
-        }
+  // filtering out any links that contain the strings in LINKS_TO_IGNORE.
+  const filteredLinks = links.filter((link) => {
+    let isGoodLink = false;
+    LINKS_TO_IGNORE.forEach((_link) => {
+      if (link.search(_link) !== -1) {
+        isGoodLink = true;
       }
+    });
+    return isGoodLink;
+  });
+
+  // categorizing results.
+  const result = filteredLinks.map((link) => {
+    if (link.toLowerCase().endsWith(".pdf")) {
+      if (!categorizedLinks["PDF"]) {
+        categorizedLinks["PDF"] = [];
+      }
+      categorizedLinks["PDF"].push(link);
+    } else if (includesAny(link.toLowerCase(), ["twitter.com", "x.com"])) {
+      categorizedLinks["X"] = link;
+    } else if (includesAny(link.toLowerCase(), ["t.me", "telegram"])) {
+      categorizedLinks["Telegram"] = link;
+    } else if (includesAny(link.toLowerCase(), ["facebook.com", "facebook"])) {
+      categorizedLinks["Facebook"] = link;
+    } else if (includesAny(link.toLowerCase(), ["instagram.com", "instagram"])) {
+      categorizedLinks["Instagram"] = link;
+    } else if (includesAny(link.toLowerCase(), ["discord.com", "discord"])) {
+      categorizedLinks["Discord"] = link;
+    } else if (includesAny(link.toLowerCase(), ["coingecko.com", "coingecko"])) {
+      categorizedLinks["Coingecko"] = link;
+    } else if (includesAny(link.toLowerCase(), ["github.com", "github"])) {
+      categorizedLinks["Github"] = link;
     } else {
-      console.log("ignored link", link);
+      if (!categorizedLinks["Unknown"]) {
+        categorizedLinks["Unknown"] = [];
+      }
+      categorizedLinks["Unknown"].push(link);
     }
     return "";
   });
 
-  await Promise.all(linkPromise);
+  if (categorizedLinks.Unknown?.length) {
+    let res = await getOfficialWebsiteFromLinks(contractName, categorizedLinks.Unknown);
+    if (res !== "false") {
+      // @ts-ignore
+      categorizedLinks.Website = res;
+    }
+  }
 
-  return categorizedLinks;
+  // reorder the links based on the order in LINKS_ORDER
+  const orderedLinks: CategorizedLinks = {};
+  Object.keys(LINKS_ORDER).forEach((key) => {
+    if (categorizedLinks[key]) {
+      orderedLinks[key] = categorizedLinks[key];
+    }
+  });
+
+  return orderedLinks;
 };
 
 export const getLiquidity = async (pairAddress: Address) => {
