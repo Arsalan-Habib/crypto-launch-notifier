@@ -84,8 +84,7 @@ You are a helpful AI assistant with expertise in detecting whether the given Url
 Your response must only be either a true or false and nothing else. 
 `;
 
-export async function verifyLinkUsingAI(contractName:string, link: string) {
-
+export async function verifyLinkUsingAI(contractName: string, link: string) {
   const promptTemplate = PromptTemplate.fromTemplate(template);
 
   const chain = promptTemplate.pipe(model);
@@ -188,14 +187,12 @@ export const renderMessage = (data: {
 }) => {
   let _links = "";
 
-
-
   if (data.links) {
     _links = "Links: \n\n";
     for (let [key, value] of Object.entries(data.links)) {
       if (key !== "PDF" && key !== "Unknown") {
         _links += `${key}: ${value}\n`;
-      } 
+      }
     }
 
     if (data.links["PDF"] && data.links["PDF"].length > 0) {
@@ -223,25 +220,20 @@ export const renderMessage = (data: {
 ${_links}
 `;
 
-
   return m;
 };
 
-export const getCategorizeLinks = async (links: string[],contractName:string): Promise<CategorizedLinks> => {
-
-
+export const getCategorizeLinks = async (links: string[], contractName: string): Promise<CategorizedLinks> => {
   const categorizedLinks: CategorizedLinks = {};
 
   const linkPromise = links.map(async (link) => {
     if (!ignoredLinks.some((_link) => link.search(_link) !== -1)) {
-
       if (link.toLowerCase().endsWith(".pdf")) {
         if (!categorizedLinks["PDF"]) {
           categorizedLinks["PDF"] = [];
         }
         categorizedLinks["PDF"].push(link);
-      }
-      else if (link.includes("twitter.com") || link.includes("x.com")) {
+      } else if (link.includes("twitter.com") || link.includes("x.com")) {
         categorizedLinks["X"] = `${link}`;
       } else if (link.includes("t.me") || link.toLowerCase().includes("telegram")) {
         categorizedLinks["Telegram"] = link;
@@ -258,23 +250,20 @@ export const getCategorizeLinks = async (links: string[],contractName:string): P
       } else {
         if (!categorizedLinks["Unknown"]) {
           categorizedLinks["Unknown"] = [];
-        } 
-          const isWebLink = await verifyLinkUsingAI(contractName,link);
-
-          if(isWebLink === "True"){
-
-            categorizedLinks["Web"] = link;
-          }else{
-
-            categorizedLinks["Unknown"].push(link);
-          }
         }
+        const isWebLink = await verifyLinkUsingAI(contractName, link);
+
+        if (isWebLink === "True") {
+          categorizedLinks["Web"] = link;
+        } else {
+          categorizedLinks["Unknown"].push(link);
+        }
+      }
     } else {
       console.log("ignored link", link);
     }
-    return ""
+    return "";
   });
-
 
   await Promise.all(linkPromise);
 
