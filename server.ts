@@ -1,7 +1,8 @@
-import { PORT, ignoredLinks } from "./config";
+import { PORT } from "./config";
 import express from "express";
-import { extractLinks, verifyLinkUsingAI, getContractSrcCode, getTokenAddress } from "./utils";
+import { extractLinks, getOfficialWebsiteFromLinks, getContractSrcCode, getTokenAddress } from "./utils";
 import { Address } from "viem";
+import { LINKS_TO_IGNORE } from "./constants/links";
 
 export const initializeServer = () => {
   const app = express();
@@ -73,9 +74,9 @@ export const initializeServer = () => {
 
   app.post("/isWebUrl", async (req, res) => {
     try {
-      const { contractName, url } = req.body;
+      const { contractName, links } = req.body;
 
-      const result = await verifyLinkUsingAI(contractName, url);
+      const result = await getOfficialWebsiteFromLinks(contractName, links);
 
       console.log("result =>", result);
 
@@ -96,7 +97,7 @@ export const initializeServer = () => {
 
     console.log("link =>", link);
 
-    const ignored = ignoredLinks.some((_link) => {
+    const ignored = LINKS_TO_IGNORE.some((_link) => {
       console.log("_link =>", _link);
       console.log("link =>", link.search(_link) !== -1);
       return link.search(_link) !== -1;
