@@ -10,7 +10,7 @@ import TelegramBot from "node-telegram-bot-api";
 import {
   CHAIN_ID,
   extractLinks,
-  getCategorizeLinks,
+  getCategorizedLinksObject,
   getContractSrcCode,
   getLiquidity,
   getTokenAddress,
@@ -107,7 +107,7 @@ function logHandler(logs) {
       // console.log("contractCode =>", contractCode);
       let rawLinks: string[] = [];
 
-      let categorizedLinks: CategorizedLinks | null = null;
+      let categorizedLinks: CategorizedLinks = {};
 
       let name = "-";
 
@@ -121,23 +121,23 @@ function logHandler(logs) {
       rawLinks = extractLinks(contractCode);
 
       if (rawLinks.length > 0) {
-        categorizedLinks = await getCategorizeLinks(rawLinks, name);
+        categorizedLinks = await getCategorizedLinksObject(rawLinks, name);
       }
 
-      if (categorizedLinks) {
-        console.log("categorizedLinks =>", categorizedLinks);
+      if (Object.keys(categorizedLinks).length > 0) {
+        let message = renderMessage({
+          token: token as Address,
+          name,
+          chain: CHAINS[CHAIN_ID].chain.name,
+          links: categorizedLinks,
+          liquidity: await getLiquidity(pair),
+        });
+
+        sendMessageHandler(message);
+      } else {
+        console.log("contract with no useful info found!");
+        return;
       }
-      let message = renderMessage({
-        token: token as Address,
-        name,
-        chain: CHAINS[CHAIN_ID].chain.name,
-        links: categorizedLinks,
-        liquidity: await getLiquidity(pair),
-      });
-
-      console.log("rawLinks =>", rawLinks);
-
-      sendMessageHandler(message);
     }, 30000);
   });
 }

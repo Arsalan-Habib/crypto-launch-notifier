@@ -189,7 +189,7 @@ export const includesAny = (str: string, testers: string[]) => {
   return found;
 };
 
-export const getCategorizeLinks = async (links: string[], contractName: string): Promise<CategorizedLinks> => {
+export const getCategorizedLinksObject = async (links: string[], contractName: string): Promise<CategorizedLinks> => {
   const categorizedLinks: CategorizedLinks = {};
 
   // filtering out any links that contain the strings in LINKS_TO_IGNORE.
@@ -204,7 +204,7 @@ export const getCategorizeLinks = async (links: string[], contractName: string):
   });
 
   // categorizing results.
-  const result = filteredLinks.map((link) => {
+  filteredLinks.forEach((link) => {
     if (link.toLowerCase().endsWith(".pdf")) {
       if (!categorizedLinks["PDF"]) {
         categorizedLinks["PDF"] = [];
@@ -230,7 +230,6 @@ export const getCategorizeLinks = async (links: string[], contractName: string):
       }
       categorizedLinks["Unknown"].push(link);
     }
-    return "";
   });
 
   if (categorizedLinks.Unknown?.length) {
