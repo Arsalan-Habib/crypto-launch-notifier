@@ -228,7 +228,11 @@ export const getCategorizedLinksObject = async (links: string[], contractName: s
     let res = await getOfficialWebsiteFromLinks(contractName, categorizedLinks.Unknown);
     if (res !== "false") {
       // @ts-ignore
-      categorizedLinks.Website = res.replace(/"/g, "");
+      let website = res.replace(/"/g, "");
+      categorizedLinks.Website = website;
+
+      // remove the website from the unknown category
+      categorizedLinks.Unknown = categorizedLinks.Unknown.filter((link) => link !== website);
     }
   }
 
