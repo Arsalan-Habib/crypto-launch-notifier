@@ -5,7 +5,7 @@ import { PromptTemplate } from "@langchain/core/prompts";
 import { getSourceCode } from "../config/api";
 import { Address, createPublicClient, erc20Abi, http } from "viem";
 import uniswapPairAbi from "../constants/abis/uniswapPairAbi";
-import { LINKS_ORDER, LINKS_TO_IGNORE } from "../constants/links";
+import { LINKS_ORDER, KEYWORDS_TO_IGNORE } from "../constants/links";
 
 export const CHAIN_ID = 1;
 
@@ -180,7 +180,7 @@ export const includesAny = (str: string, testers: string[]) => {
   let found = false;
 
   for (let regex of testers) {
-    if (str.includes(regex)) {
+    if (str.toLowerCase().includes(regex.toLowerCase())) {
       found = true;
       break;
     }
@@ -193,15 +193,7 @@ export const getCategorizedLinksObject = async (links: string[], contractName: s
   const categorizedLinks: CategorizedLinks = {};
 
   // filtering out any links that contain the strings in LINKS_TO_IGNORE.
-  const filteredLinks = links.filter((link) => {
-    let isGoodLink = false;
-    LINKS_TO_IGNORE.forEach((_link) => {
-      if (link.search(_link) !== -1) {
-        isGoodLink = true;
-      }
-    });
-    return isGoodLink;
-  });
+  const filteredLinks = links.filter((link) => !includesAny(link.toLowerCase(), KEYWORDS_TO_IGNORE));
 
   // categorizing results.
   filteredLinks.forEach((link) => {

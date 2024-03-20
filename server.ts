@@ -2,7 +2,7 @@ import { PORT } from "./config";
 import express from "express";
 import { extractLinks, getOfficialWebsiteFromLinks, getContractSrcCode, getTokenAddress } from "./utils";
 import { Address } from "viem";
-import { LINKS_TO_IGNORE } from "./constants/links";
+import { KEYWORDS_TO_IGNORE } from "./constants/links";
 
 export const initializeServer = () => {
   const app = express();
@@ -97,7 +97,7 @@ export const initializeServer = () => {
 
     console.log("link =>", link);
 
-    const ignored = LINKS_TO_IGNORE.some((_link) => {
+    const ignored = KEYWORDS_TO_IGNORE.some((_link) => {
       console.log("_link =>", _link);
       console.log("link =>", link.search(_link) !== -1);
       return link.search(_link) !== -1;

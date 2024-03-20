@@ -1,15 +1,16 @@
 // remove any links that contain these strings
-export const LINKS_TO_IGNORE = [
+export const KEYWORDS_TO_IGNORE = [
   "eips.ethereum.org",
   "consensys",
   "solidity.readthedocs",
-  "https://www.github.com/ethereum/EIPs",
-  "https://github.com/ethereum/EIPs/issues",
-  "https://forum.openzeppelin.com",
-  "https://github.com/OpenZeppelin/openzeppelin-contracts",
-  "https://forum.zeppelin.solutions",
-  "https://docs.soliditylang.org/",
-  "https://eth.wiki/json-rpc",
+  "ethereum/EIPs",
+  "forum.openzeppelin.com",
+  "OpenZeppelin",
+  "forum.zeppelin.solutions",
+  "docs.soliditylang.org",
+  "eth.wiki/json-rpc",
+  "openzeppelin-contracts",
+  "/issues",
 ];
 
 // order of links to be displayed in the rendered message.
