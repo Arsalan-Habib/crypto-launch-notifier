@@ -1,6 +1,13 @@
 import { PORT } from "./config";
 import express from "express";
-import { extractLinks, getOfficialWebsiteFromLinks, getContractSrcCode, getTokenAddress } from "./utils";
+import {
+  extractLinks,
+  getOfficialWebsiteFromLinks,
+  getContractSrcCode,
+  getTokenAddress,
+  extractDescription,
+  extractWebSiteLink,
+} from "./utils";
 import { Address } from "viem";
 import { KEYWORDS_TO_IGNORE } from "./constants/links";
 
@@ -107,6 +114,34 @@ export const initializeServer = () => {
       status: true,
       ignored,
     });
+  });
+
+  app.post("/extract-des", async (req, res) => {
+    const { name, link } = req.body;
+
+    const des = await extractDescription(name, link);
+
+    return res.json({
+      status: true,
+      data: des,
+    });
+  });
+
+  app.post("/extract-weblink-from-code/", async (req, res) => {
+    const { code } = req.body;
+
+    const link = extractWebSiteLink(code);
+
+    if (link) {
+      return res.json({
+        status: true,
+        data: link,
+      });
+    } else {
+      return res.json({
+        status: false,
+      });
+    }
   });
 
   app.listen(PORT, () => {

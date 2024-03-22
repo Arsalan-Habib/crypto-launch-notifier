@@ -9,7 +9,9 @@ import factoryAbi from "./constants/abis/factoryAbi";
 import TelegramBot from "node-telegram-bot-api";
 import {
   CHAIN_ID,
+  extractDescription,
   extractLinks,
+  extractWebSiteLink,
   getCategorizedLinksObject,
   getContractSrcCode,
   getLiquidity,
@@ -118,16 +120,29 @@ function logHandler(logs) {
 
       const { sourceCode: contractCode, name: tokenName } = contractCodeRes;
       name = tokenName;
+      let websiteLink = extractWebSiteLink(contractCode);
+
       rawLinks = extractLinks(contractCode);
 
       if (rawLinks.length > 0) {
-        categorizedLinks = await getCategorizedLinksObject(rawLinks, name);
+        categorizedLinks = await getCategorizedLinksObject(rawLinks, name, websiteLink);
       }
 
       if (Object.keys(categorizedLinks).length > 0) {
+        let description: string | null = "-";
+
+        if (categorizedLinks.Website) {
+          description = await extractDescription(name, categorizedLinks.Website);
+
+          if (!description) {
+            description = "-";
+          }
+        }
+
         let message = renderMessage({
           token: token as Address,
           name,
+          description,
           chain: CHAINS[CHAIN_ID].chain.name,
           links: categorizedLinks,
           liquidity: await getLiquidity(pair),

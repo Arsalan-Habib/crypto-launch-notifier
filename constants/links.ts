@@ -13,6 +13,13 @@ export const KEYWORDS_TO_IGNORE = [
   "/issues",
 ];
 
+export const REGEX_FOR_WEBSITE_URLS = [
+  /Website:?\s*(?<links>https?:\/\/.+)\n?\s?/gim,
+  /Web:?\s*(?<links>https?:\/\/.+)\n?\s?/gim,
+  /Web\s*\|\s*(?<links>https?:\/\/.+)\n?\s?/gim,
+  /Website\s*\|\s*(?<links>https?:\/\/.+)\n?\s?/gim,
+];
+
 // order of links to be displayed in the rendered message.
 export const LINKS_ORDER = {
   Website: 0,

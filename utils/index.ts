@@ -1,11 +1,11 @@
-import { CategorizedLinks, OPENAI_API_KEY } from "../config";
+import { CategorizedLinks, model, templateForDescription, templateForWebsiteLink } from "../config";
+import { JSDOM } from "jsdom";
 import { CHAINS, defaultChain } from "../constants/chains";
-import { ChatOpenAI } from "@langchain/openai";
 import { PromptTemplate } from "@langchain/core/prompts";
 import { getSourceCode } from "../config/api";
 import { Address, createPublicClient, erc20Abi, http } from "viem";
 import uniswapPairAbi from "../constants/abis/uniswapPairAbi";
-import { LINKS_ORDER, KEYWORDS_TO_IGNORE } from "../constants/links";
+import { LINKS_ORDER, KEYWORDS_TO_IGNORE, REGEX_FOR_WEBSITE_URLS } from "../constants/links";
 
 export const CHAIN_ID = 1;
 
@@ -18,27 +18,20 @@ export const getURL = async (chainId: number = defaultChain.chainId) => {
   return CHAINS[chainId].api;
 };
 
-const model = new ChatOpenAI({
-  modelName: "gpt-4",
-  openAIApiKey: OPENAI_API_KEY,
-});
-
-const template = `
-You are a helpful AI assistant with expertise in finding the correct link for a given cryptocurrency project. You are given the token symbol of the project and some links. You need to return the link that is most likely to be the official website of the project. If no link is the official website, you should return false. Do not return any link that is not from the provided links.
-
-<tokenSymbol>
-  {tokenSymbol}
-</tokenSymbol>
-
-<links>
-  {links}
-</links>
-
-Your response must either be a single link or a false in the case that no links match the project. Do not add any additional information to your response. You should only return the link or false.
-`;
+export const extractWebSiteLink = (contractCode: string) => {
+  for (const pattern of REGEX_FOR_WEBSITE_URLS) {
+    // console.log("pattern =>", pattern);
+    const match: RegExpExecArray | null = new RegExp(pattern).exec(contractCode);
+    // console.log("match =>", match);
+    if (match && match.groups && match.groups.links) {
+      return match.groups.links;
+    }
+  }
+  return null;
+};
 
 export async function getOfficialWebsiteFromLinks(contractName: string, links: string[]) {
-  const promptTemplate = PromptTemplate.fromTemplate(template);
+  const promptTemplate = PromptTemplate.fromTemplate(templateForWebsiteLink);
 
   const chain = promptTemplate.pipe(model);
 
@@ -69,7 +62,7 @@ const cleanLink = (link: string) => {
 };
 
 export function extractLinks(contractCode: string) {
-  console.log("contractCode =>", contractCode);
+  // console.log("contractCode =>", contractCode);
   const matches = contractCode.matchAll(/(?<links>https?:\/\/.+)\n?\s?/gm);
   console.log("matches =>", matches);
 
@@ -134,6 +127,7 @@ export const getTokenAddress = async (address: Address): Promise<Address | null>
 export const renderMessage = (data: {
   token: Address;
   name: string;
+  description: string;
   chain: string;
   links: CategorizedLinks | null;
   liquidity: string;
@@ -170,6 +164,8 @@ export const renderMessage = (data: {
 🔗  Chain: <b>${data.chain}</b>
 💰  Liquidity: <b>${data.liquidity} ETH</b>
 
+📓  Description: <b>${data.description}</b>
+
 ${_links}
 `;
 
@@ -189,8 +185,16 @@ export const includesAny = (str: string, testers: string[]) => {
   return found;
 };
 
-export const getCategorizedLinksObject = async (links: string[], contractName: string): Promise<CategorizedLinks> => {
+export const getCategorizedLinksObject = async (
+  links: string[],
+  contractName: string,
+  websiteLink: string | null = null,
+): Promise<CategorizedLinks> => {
   const categorizedLinks: CategorizedLinks = {};
+
+  if (websiteLink) {
+    categorizedLinks["Website"] = websiteLink;
+  }
 
   // filtering out any links that contain the strings in LINKS_TO_IGNORE.
   const filteredLinks = links.filter((link) => !includesAny(link.toLowerCase(), KEYWORDS_TO_IGNORE));
@@ -202,6 +206,8 @@ export const getCategorizedLinksObject = async (links: string[], contractName: s
         categorizedLinks["PDF"] = [];
       }
       categorizedLinks["PDF"].push(link);
+    } else if (includesAny(link.toLowerCase(), ["gitbook.com", "gitbook"])) {
+      categorizedLinks["Gitbook"] = link;
     } else if (includesAny(link.toLowerCase(), ["twitter.com", "x.com"])) {
       categorizedLinks["X"] = link;
     } else if (includesAny(link.toLowerCase(), ["t.me", "telegram"])) {
@@ -224,15 +230,22 @@ export const getCategorizedLinksObject = async (links: string[], contractName: s
     }
   });
 
-  if (categorizedLinks.Unknown?.length) {
-    let res = await getOfficialWebsiteFromLinks(contractName, categorizedLinks.Unknown);
-    if (res !== "false") {
-      // @ts-ignore
-      let website = res.replace(/"/g, "");
-      categorizedLinks.Website = website;
+  if (!categorizedLinks["Website"] || categorizedLinks["Website"] == "") {
+    if (categorizedLinks.Unknown?.length) {
+      let res = await getOfficialWebsiteFromLinks(contractName, categorizedLinks.Unknown);
+      if (res !== "false") {
+        // @ts-ignore
+        let website = res.replace(/"/g, "");
 
-      // remove the website from the unknown category
-      categorizedLinks.Unknown = categorizedLinks.Unknown.filter((link) => link !== website);
+        categorizedLinks.Website = website;
+
+        // remove the website from the unknown category
+        categorizedLinks.Unknown = categorizedLinks.Unknown.filter((link) => link !== website);
+      }
+    }
+  } else {
+    if (categorizedLinks.Unknown?.length) {
+      categorizedLinks.Unknown = categorizedLinks.Unknown.filter((link) => link !== categorizedLinks.Website);
     }
   }
 
@@ -274,4 +287,63 @@ export const getLiquidity = async (pairAddress: Address) => {
   const liquidity = (_reserves[i] as bigint) / BigInt(10 ** decimals);
 
   return liquidity.toString(3);
+};
+
+export const extractDescription = async (tokenName: string, url: string) => {
+  try {
+    const res = await fetch(url);
+
+    const domText = await res.text();
+
+    const dom = new JSDOM(domText);
+
+    const desTags = dom.window.document.querySelectorAll("meta[name*='description'], meta[property*='description']");
+
+    const txt = Array.from(desTags).reduce((longestDes, desTag) => {
+      const desTxt = desTag.getAttribute("content");
+
+      if (!desTxt) {
+        return longestDes;
+      }
+
+      if (desTxt.split(" ").length > longestDes.split(" ").length) {
+        return desTxt;
+      }
+
+      return longestDes;
+    }, "");
+
+    if (txt.split(" ").length >= 7) {
+      return txt;
+    }
+
+    const typography = dom.window.document.body.querySelectorAll("h1, h2, h3, h4, h5, h6, p");
+
+    // console.log("typography =>", Array.from(typography.values()));
+
+    const textContent = Array.from(typography.values()).reduce((acc, ele) => {
+      return acc + `\n${ele.textContent}`;
+    }, "");
+
+    console.log("textContent =>", textContent);
+
+    const promptTemplate = PromptTemplate.fromTemplate(templateForDescription);
+
+    const chain = promptTemplate.pipe(model);
+
+    const resAI = await chain.invoke({
+      websiteName: tokenName,
+      markup: JSON.stringify(textContent),
+    });
+
+    console.log("Description from AI:", resAI.content);
+
+    return resAI.content.toString();
+
+    // return/ null;
+  } catch (err) {
+    console.log("err =>", err);
+
+    return null;
+  }
 };
