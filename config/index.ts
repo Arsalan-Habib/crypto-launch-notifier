@@ -44,7 +44,7 @@ Your response must either be a single link or a false in the case that no links 
 
 export const templateForDescription = `
 You are a helpful AI assistant with expertise in extracting the description of the website given its HTML markup and website name. 
-Your task is to extract a brief description related to the given website name from the given markup without changing/adding your own words to the orginal text.
+Your task is to extract a brief description related to the given website name from the given markup without changing/adding your own words to the orginal text and if the description is more than 25 words then summarize it in to 25 words.
 
 <websiteName>
   {websiteName}
