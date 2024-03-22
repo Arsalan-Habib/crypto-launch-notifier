@@ -148,7 +148,9 @@ function logHandler(logs) {
           liquidity: await getLiquidity(pair),
         });
 
-        sendMessageHandler(message);
+        if (categorizedLinks.Website && categorizedLinks.Website !== "-" && categorizedLinks.Website !== "") {
+          sendMessageHandler(message);
+        }
       } else {
         console.log("contract with no useful info found!");
         return;
