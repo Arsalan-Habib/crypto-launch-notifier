@@ -149,7 +149,9 @@ function logHandler(logs) {
         });
 
         if (categorizedLinks.Website && categorizedLinks.Website !== "-" && categorizedLinks.Website !== "") {
-          sendMessageHandler(message);
+          if (description !== "-") {
+            sendMessageHandler(message);
+          }
         }
       } else {
         console.log("contract with no useful info found!");
