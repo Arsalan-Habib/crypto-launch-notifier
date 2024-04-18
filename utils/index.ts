@@ -160,7 +160,7 @@ export const renderMessage = (data: {
   const m = `🔥 <b>Exchange Created</b>
 
 🪙  Token: <b>${data.name}</b>
-🗒   Address: <b><a href="${CHAINS[CHAIN_ID].blockExplorerUrls[0]}/address/${data.token}">${data.token}</a></b>
+🗒   Address: <b><code>${data.token}</code></b>
 🔗  Chain: <b>${data.chain}</b>
 💰  Liquidity: <b>${data.liquidity} ETH</b>
 
